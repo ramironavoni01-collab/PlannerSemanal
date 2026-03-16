@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tracker — Ramiro Navoni</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F7F6F3;
+  --surface: #FFFFFF;
+  --border: #E4E1D8;
+  --border-strong: #C9C5BA;
+  --text-1: #1A1916;
+  --text-2: #6B6860;
+  --text-3: #A09D96;
+  --accent: #1428A0;
+  --accent-bg: #EEF2FF;
+  --green: #166534; --green-bg: #DCFCE7;
+  --amber: #92400E; --amber-bg: #FEF3C7;
+  --red: #991B1B; --red-bg: #FEE2E2;
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
+  --sh: 0 1px 3px rgba(0,0,0,.06);
+  --sidebar: 210px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-1); min-height: 100vh; }
+
+/* ── LAYOUT ── */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+width: var(–sidebar); flex-shrink: 0;
+background: var(–surface); border-right: 1px solid var(–border);
+padding: 24px 14px; display: flex; flex-direction: column;
+position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.logo { font-size: 12px; font-weight: 600; letter-spacing: .08em; color: var(–text-3); text-transform: uppercase; margin-bottom: 20px; padding: 0 6px; }
+.logo span { color: var(–accent); }
+.nav-sec { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(–text-3); padding: 0 6px; margin: 14px 0 5px; }
+.nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(–r-sm); cursor: pointer; font-size: 13px; color: var(–text-2); transition: all .15s; border: none; background: transparent; width: 100%; text-align: left; }
+.nav-item:hover { background: var(–bg); color: var(–text-1); }
+.nav-item.on { background: var(–accent-bg); color: var(–accent); font-weight: 500; }
+.nav-dot { width: 7px; height: 7px; border-radius: 2px; flex-shrink: 0; }
+.nav-footer { margin-top: auto; padding: 10px 6px 0; border-top: 1px solid var(–border); font-size: 11px; color: var(–text-3); line-height: 1.5; }
+
+.main { flex: 1; padding: 28px 32px; overflow-x: hidden; }
+.view { display: none; } .view.on { display: block; }
+
+/* ── PAGE HEADER ── */
+.ph { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; flex-wrap: wrap; gap: 10px; }
+.ph-title { font-size: 20px; font-weight: 500; }
+.ph-sub { font-size: 12px; color: var(–text-2); margin-top: 2px; }
+.week-nav { display: flex; align-items: center; gap: 6px; background: var(–surface); border: 1px solid var(–border); border-radius: var(–r-md); padding: 5px 10px; }
+.week-nav button { background: none; border: none; cursor: pointer; color: var(–text-2); font-size: 15px; padding: 0 3px; line-height: 1; transition: color .15s; }
+.week-nav button:hover { color: var(–text-1); }
+.wk-label { font-size: 12px; font-weight: 500; min-width: 155px; text-align: center; font-family: ‘DM Mono’, monospace; }
+
+/* ── STATS ── */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; margin-bottom: 20px; }
+.scard { background: var(–surface); border: 1px solid var(–border); border-radius: var(–r-md); padding: 12px 14px; box-shadow: var(–sh); }
+.scard-n { font-size: 24px; font-weight: 500; font-family: ‘DM Mono’, monospace; }
+.scard-l { font-size: 11px; color: var(–text-2); margin-top: 1px; }
+.scard-warn .scard-n { color: var(–red); }
+
+/* ── ADD FORM ── */
+.add-card { background: var(–surface); border: 1px solid var(–border); border-radius: var(–r-lg); padding: 14px; margin-bottom: 14px; box-shadow: var(–sh); }
+.add-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.add-row input[type=text] { flex: 1; min-width: 180px; font-size: 13px; font-family: ‘DM Sans’, sans-serif; padding: 7px 10px; border: 1px solid var(–border); border-radius: var(–r-sm); background: var(–bg); color: var(–text-1); outline: none; transition: border-color .15s; }
+.add-row input[type=text]:focus { border-color: var(–accent); }
+.add-row select, .add-row input[type=date] { font-size: 12px; font-family: ‘DM Sans’, sans-serif; padding: 7px 8px; border: 1px solid var(–border); border-radius: var(–r-sm); background: var(–bg); color: var(–text-1); outline: none; }
+.btn-add { font-size: 13px; font-family: ‘DM Sans’, sans-serif; font-weight: 500; padding: 7px 16px; background: var(–accent); color: #fff; border: none; border-radius: var(–r-sm); cursor: pointer; transition: opacity .15s; white-space: nowrap; }
+.btn-add:hover { opacity: .88; }
+
+/* ── FILTERS ── */
+.filters { display: flex; gap: 5px; margin-bottom: 12px; flex-wrap: wrap; }
+.fb { font-size: 11px; font-family: ‘DM Sans’, sans-serif; padding: 3px 11px; border: 1px solid var(–border); border-radius: 20px; background: transparent; color: var(–text-2); cursor: pointer; transition: all .15s; }
+.fb.on { background: var(–text-1); color: #fff; border-color: transparent; }
+
+/* ── TASK LIST ── */
+.task-list { display: flex; flex-direction: column; gap: 5px; }
+.task { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: var(–surface); border: 1px solid var(–border); border-radius: var(–r-md); box-shadow: var(–sh); transition: opacity .2s; animation: si .18s ease; }
+@keyframes si { from { opacity:0; transform:translateY(-3px); } to { opacity:1; transform:translateY(0); } }
+.task.done { opacity: .42; }
+.task:hover { border-color: var(–border-strong); }
+.chk { width: 16px; height: 16px; border: 1.5px solid var(–border-strong); border-radius: 4px; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(–green); transition: all .15s; }
+.chk.on { background: var(–green-bg); border-color: var(–green); }
+.t-body { flex: 1; min-width: 0; }
+.t-text { font-size: 13px; color: var(–text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task.done .t-text { text-decoration: line-through; color: var(–text-3); }
+.t-meta { display: flex; align-items: center; gap: 5px; margin-top: 2px; flex-wrap: wrap; }
+.tag { font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
+.t-due { font-size: 10px; color: var(–text-3); font-family: ‘DM Mono’, monospace; }
+.t-due.ov { color: var(–red); font-weight: 500; }
+.t-due.soon { color: var(–amber); font-weight: 500; }
+.t-del { font-size: 11px; color: var(–text-3); cursor: pointer; padding: 2px 6px; border-radius: 3px; opacity: 0; transition: opacity .15s; border: none; background: transparent; }
+.task:hover .t-del { opacity: 1; }
+.t-del:hover { background: var(–red-bg); color: var(–red); }
+.empty { text-align: center; padding: 32px; color: var(–text-3); font-size: 13px; border: 1px dashed var(–border); border-radius: var(–r-lg); }
+
+/* ── CALENDAR ── */
+.cal-header { display: grid; grid-template-columns: 60px repeat(5, 1fr); gap: 6px; margin-bottom: 6px; }
+.cal-day-hdr { text-align: center; font-size: 11px; font-weight: 600; padding: 7px 4px; border-radius: var(–r-sm); color: #fff; }
+.cal-grid { display: grid; grid-template-columns: 60px repeat(5, 1fr); gap: 2px; }
+.cal-time { font-size: 10px; font-family: ‘DM Mono’, monospace; color: var(–text-3); text-align: right; padding-right: 8px; display: flex; align-items: flex-start; padding-top: 4px; height: 44px; }
+.cal-time.hr { color: var(–text-2); font-weight: 500; }
+.cal-cell { height: 44px; border-radius: 3px; }
+.cal-cell.free { background: transparent; }
+.cal-block { border-radius: 5px; padding: 3px 6px; font-size: 10px; font-weight: 500; line-height: 1.3; height: 100%; display: flex; flex-direction: column; justify-content: center; overflow: hidden; cursor: default; border: 1px solid transparent; }
+.cal-block:hover { filter: brightness(.96); }
+.cal-stats { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; margin-bottom: 16px; }
+
+/* ── REVISIÓN ── */
+.rev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.rev-card { background: var(–surface); border: 1px solid var(–border); border-radius: var(–r-lg); padding: 14px 16px; box-shadow: var(–sh); }
+.rev-title { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(–text-3); margin-bottom: 8px; }
+.rev-q { font-size: 12px; color: var(–text-2); padding: 6px 8px; border-radius: var(–r-sm); margin-bottom: 3px; border: 1px solid transparent; cursor: default; line-height: 1.4; transition: all .15s; }
+.rev-q:hover { background: var(–bg); border-color: var(–border); color: var(–text-1); }
+.rev-notes { width: 100%; min-height: 88px; font-family: ‘DM Sans’, sans-serif; font-size: 13px; border: 1px solid var(–border); border-radius: var(–r-sm); padding: 9px; background: var(–bg); color: var(–text-1); outline: none; resize: vertical; line-height: 1.5; }
+.btn-sec { font-size: 12px; font-family: ‘DM Sans’, sans-serif; padding: 6px 12px; border: 1px solid var(–border); border-radius: var(–r-sm); background: transparent; color: var(–text-2); cursor: pointer; transition: all .15s; }
+.btn-sec:hover { background: var(–bg); color: var(–text-1); border-color: var(–border-strong); }
+.saved-msg { font-size: 11px; color: var(–green); margin-left: 8px; opacity: 0; transition: opacity .3s; vertical-align: middle; }
+
+/* ── PRIORIDADES ── */
+.pri-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.pri-card { display: flex; align-items: center; gap: 12px; background: var(–surface); border: 1px solid var(–border); border-radius: var(–r-lg); padding: 12px 16px; box-shadow: var(–sh); }
+.pri-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; flex-shrink: 0; font-family: ‘DM Mono’, monospace; }
+.pri-input { flex: 1; font-size: 14px; font-family: ‘DM Sans’, sans-serif; border: none; background: transparent; color: var(–text-1); outline: none; }
+.pri-input::placeholder { color: var(–text-3); }
+
+/* ── PILARES ── */
+.pillar-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-bottom: 16px; }
+.pillar { background: var(–surface); border: 1px solid var(–border); border-radius: var(–r-lg); padding: 14px; box-shadow: var(–sh); }
+.p-icon { width: 30px; height: 30px; border-radius: var(–r-sm); margin-bottom: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.p-name { font-size: 13px; font-weight: 500; margin-bottom: 5px; }
+.p-desc { font-size: 12px; color: var(–text-2); line-height: 1.5; }
+.p-tag { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 4px; display: inline-block; margin-top: 7px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.info-card { border-radius: var(–r-lg); padding: 12px 14px; }
+.info-title { font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+.info-item { font-size: 11px; padding-left: 10px; position: relative; margin-bottom: 3px; line-height: 1.4; }
+.info-item::before { content: “·”; position: absolute; left: 0; }
+
+/* ── FASES ── */
+.fase-list { display: flex; flex-direction: column; }
+.fase { display: flex; gap: 14px; padding-bottom: 18px; position: relative; }
+.fase:not(:last-child)::before { content: ‘’; position: absolute; left: 15px; top: 32px; bottom: 0; width: 1px; background: var(–border); }
+.fase-dot { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; font-family: ‘DM Mono’, monospace; }
+.fase-body { flex: 1; padding-top: 3px; }
+.fase-title { font-size: 13px; font-weight: 500; margin-bottom: 1px; }
+.fase-wk { font-size: 10px; font-family: ‘DM Mono’, monospace; margin-bottom: 4px; }
+.fase-desc { font-size: 12px; color: var(–text-2); line-height: 1.6; }
+
+@media (max-width: 700px) {
+.sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; padding: 10px; gap: 4px; }
+.nav-sec, .logo, .nav-footer { display: none; }
+.main { padding: 14px; }
+.stats, .cal-stats { grid-template-columns: 1fr 1fr; }
+.rev-grid, .two-col, .pillar-grid { grid-template-columns: 1fr; }
+.cal-time { font-size: 9px; }
+}
+</style>
+
+</head>
+<body>
+<div class="layout">
+<nav class="sidebar">
+  <div class="logo">Tracker <span>RN</span></div>
+  <div class="nav-sec">Vistas</div>
+  <button class="nav-item on" onclick="nav('cal',this)"><div class="nav-dot" style="background:#1428A0"></div>Calendario</button>
+  <button class="nav-item" onclick="nav('pend',this)"><div class="nav-dot" style="background:#166534"></div>Pendientes</button>
+  <button class="nav-item" onclick="nav('rev',this)"><div class="nav-dot" style="background:#5B21B6"></div>Revisión dominical</button>
+  <button class="nav-item" onclick="nav('pri',this)"><div class="nav-dot" style="background:#9A3412"></div>Top 3 semana</button>
+  <button class="nav-item" onclick="nav('sist',this)"><div class="nav-dot" style="background:#065F46"></div>Sistema</button>
+  <button class="nav-item" onclick="nav('fases',this)"><div class="nav-dot" style="background:#854D0E"></div>Fases del cuatri</button>
+  <div class="nav-sec">Filtros rápidos</div>
+  <button class="nav-item" onclick="nav('pend',this);setFilter('samsung')"><div class="nav-dot" style="background:#1428A0"></div>Samsung</button>
+  <button class="nav-item" onclick="nav('pend',this);setFilter('facu')"><div class="nav-dot" style="background:#7E22CE"></div>Facultad</button>
+  <button class="nav-item" onclick="nav('pend',this);setFilter('alta')"><div class="nav-dot" style="background:#DC2626"></div>Alta prioridad</button>
+  <div class="nav-footer">Tracker Semanal v2.0<br>1° Cuatrimestre 2026<br>Datos guardados localmente</div>
+</nav>
+
+<main class="main">
+
+<!-- ══ CALENDARIO SEMANAL ══ -->
+
+<div class="view on" id="v-cal">
+  <div class="ph">
+    <div><div class="ph-title">Calendario semanal</div><div class="ph-sub" id="cal-sub">Semana actual</div></div>
+    <div class="week-nav">
+      <button onclick="changeWeek(-1)">←</button>
+      <div class="wk-label" id="wk-cal">—</div>
+      <button onclick="changeWeek(1)">→</button>
+    </div>
+  </div>
+  <div class="cal-stats" id="cal-stats"></div>
+  <div class="cal-header" id="cal-header"></div>
+  <div class="cal-grid" id="cal-grid"></div>
+  <div style="margin-top:10px;font-size:11px;color:var(--text-3);padding:0 4px">
+    ⚠ Miércoles: PI1 Práctica 15:30–18:00 y Control Industrial Teórico 17:00–18:30 se superponen — sin conflicto de cursada.
+  </div>
+</div>
+
+<!-- ══ PENDIENTES ══ -->
+
+<div class="view" id="v-pend">
+  <div class="ph">
+    <div><div class="ph-title">Pendientes</div><div class="ph-sub" id="pend-sub">Semana actual</div></div>
+    <div class="week-nav">
+      <button onclick="changeWeek(-1)">←</button>
+      <div class="wk-label" id="wk-pend">—</div>
+      <button onclick="changeWeek(1)">→</button>
+    </div>
+  </div>
+  <div class="stats" id="stats-row"></div>
+  <div class="add-card">
+    <div class="add-row">
+      <input type="text" id="t-input" placeholder="Escribí un pendiente y presioná Enter..." onkeydown="if(event.key==='Enter')addTask()">
+      <select id="t-area">
+        <option value="samsung">Samsung</option>
+        <option value="ci">Control Industrial</option>
+        <option value="ads">Análisis D&S</option>
+        <option value="ae">Adm. Empresas</option>
+        <option value="rt">Rel. Trabajo</option>
+        <option value="pi1">Proc. Ind. I</option>
+        <option value="log">Logística</option>
+        <option value="sin">Sist. Info.</option>
+        <option value="fin">Finanzas</option>
+        <option value="mcs">Moral y CS</option>
+        <option value="otro">Otro</option>
+      </select>
+      <select id="t-pri">
+        <option value="alta">Alta</option>
+        <option value="media" selected>Media</option>
+        <option value="baja">Baja</option>
+      </select>
+      <input type="date" id="t-due" title="Fecha límite (opcional)">
+      <button class="btn-add" onclick="addTask()">+ Agregar</button>
+    </div>
+  </div>
+  <div class="filters" id="filter-row">
+    <button class="fb on" onclick="setFilter('todas')">Todas</button>
+    <button class="fb" onclick="setFilter('pendientes')">Pendientes</button>
+    <button class="fb" onclick="setFilter('samsung')">Samsung</button>
+    <button class="fb" onclick="setFilter('facu')">Facu</button>
+    <button class="fb" onclick="setFilter('alta')">Alta prioridad</button>
+    <button class="fb" onclick="setFilter('vencidas')">Vencidas</button>
+  </div>
+  <div class="task-list" id="task-list"></div>
+</div>
+
+<!-- ══ REVISIÓN ══ -->
+
+<div class="view" id="v-rev">
+  <div class="ph"><div><div class="ph-title">Revisión dominical</div><div class="ph-sub">20 minutos · Mismo horario cada semana</div></div></div>
+  <div class="rev-grid">
+    <div class="rev-card">
+      <div class="rev-title">Preguntas de arranque</div>
+      <div class="rev-q">¿Qué viene esta semana en cada materia?</div>
+      <div class="rev-q">¿Hay parciales o TPs en los próximos 14 días?</div>
+      <div class="rev-q">¿Qué bloques de estudio agendo esta semana?</div>
+      <div class="rev-q">¿Qué quedó pendiente de Samsung la semana pasada?</div>
+      <div class="rev-q">¿El miércoles está demasiado cargado?</div>
+    </div>
+    <div class="rev-card">
+      <div class="rev-title">Reglas del sistema</div>
+      <div class="rev-q">GoodNotes → apuntes por materia</div>
+      <div class="rev-q">Este tracker → pendientes con prioridad o fecha</div>
+      <div class="rev-q">Notion → gestión completa del cuatrimestre</div>
+      <div class="rev-q">Samsung y facu conviven en la misma vista</div>
+      <div class="rev-q">Miércoles es el día más pesado — no acumular</div>
+      <div class="rev-q">Sábado = estudio profundo · Domingo = revisión</div>
+    </div>
+  </div>
+  <div class="rev-card" style="margin-bottom:0">
+    <div class="rev-title">Notas de la revisión</div>
+    <textarea class="rev-notes" id="rev-notes" placeholder="Escribí lo que detectás en la revisión de esta semana..."></textarea>
+    <div style="margin-top:8px;display:flex;align-items:center">
+      <button class="btn-sec" onclick="saveNotes()">Guardar notas</button>
+      <span class="saved-msg" id="notes-ok">Guardado ✓</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PRIORIDADES ══ -->
+
+<div class="view" id="v-pri">
+  <div class="ph">
+    <div><div class="ph-title">Top 3 de la semana</div><div class="ph-sub">Las 3 cosas que sí o sí tienen que estar hechas</div></div>
+    <div class="week-nav">
+      <button onclick="changeWeek(-1)">←</button>
+      <div class="wk-label" id="wk-pri">—</div>
+      <button onclick="changeWeek(1)">→</button>
+    </div>
+  </div>
+  <div class="pri-list" id="pri-list"></div>
+  <button class="btn-sec" onclick="savePri()">Guardar top 3</button>
+  <span class="saved-msg" id="pri-ok">Guardado ✓</span>
+</div>
+
+<!-- ══ SISTEMA ══ -->
+
+<div class="view" id="v-sist">
+  <div class="ph"><div><div class="ph-title">Los 3 pilares</div><div class="ph-sub">Tu sistema de organización para el cuatrimestre</div></div></div>
+  <div class="pillar-grid">
+    <div class="pillar">
+      <div class="p-icon" style="background:#EEF2FF">📅</div>
+      <div class="p-name">1. Captura única</div>
+      <div class="p-desc">Un solo lugar para anotar todo. Notion para el cuatrimestre, este tracker para lo operativo. No importa cuál — importa que sea uno solo.</div>
+      <span class="p-tag" style="background:#EEF2FF;color:#1428A0">Notion + Tracker</span>
+    </div>
+    <div class="pillar">
+      <div class="p-icon" style="background:#DCFCE7">⏰</div>
+      <div class="p-name">2. Revisión semanal</div>
+      <div class="p-desc">20 minutos cada domingo. Revisás qué viene, priorizás y distribuís. Sin esto, el sistema se rompe en 2 semanas.</div>
+      <span class="p-tag" style="background:#DCFCE7;color:#166534">Domingo, 20 min</span>
+    </div>
+    <div class="pillar">
+      <div class="p-icon" style="background:#FDF4FF">⏱</div>
+      <div class="p-name">3. Time-boxing</div>
+      <div class="p-desc">No estudies "cuando puedas". Asigná bloques concretos. Con 51hs comprometidas, lo que no tiene horario no existe.</div>
+      <span class="p-tag" style="background:#FDF4FF;color:#7E22CE">Bloques 45–90 min</span>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="info-card" style="background:#EEF2FF;border:0.5px solid #BFDBFE">
+      <div class="info-title" style="color:#1E40AF">Lo que funciona con este sistema</div>
+      <div class="info-item" style="color:#1E40AF">No te agarran las fechas de sorpresa</div>
+      <div class="info-item" style="color:#1E40AF">El estudio se distribuye en la semana</div>
+      <div class="info-item" style="color:#1E40AF">Samsung y facu tienen espacios definidos</div>
+      <div class="info-item" style="color:#1E40AF">Podés disfrutar el tiempo libre sin culpa</div>
+    </div>
+    <div class="info-card" style="background:#FEF3C7;border:0.5px solid #FDE68A">
+      <div class="info-title" style="color:#92400E">Lo que este sistema no hace</div>
+      <div class="info-item" style="color:#92400E">No reemplaza estudiar de verdad</div>
+      <div class="info-item" style="color:#92400E">No funciona si la revisión dominical se salta</div>
+      <div class="info-item" style="color:#92400E">No resuelve si las materias se acumulan</div>
+      <div class="info-item" style="color:#92400E">No sirve si usás 5 herramientas distintas</div>
+    </div>
+  </div>
+  <div style="margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px">
+    <div class="rev-title" style="margin-bottom:8px">Rutinas clave del día</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="rev-q" style="border:1px solid var(--border)"><strong style="color:#1428A0">9:00 Samsung —</strong> Los 3 de hoy antes de abrir el mail.</div>
+      <div class="rev-q" style="border:1px solid var(--border)"><strong style="color:#166534">13:00–14:00 Franja libre —</strong> Almorzá + 15 min de repaso de lo que viene a la noche.</div>
+      <div class="rev-q" style="border:1px solid var(--border)"><strong style="color:#5B21B6">Al llegar a casa —</strong> Dump rápido: anotá todo lo pendiente. 5 minutos, vacía la mente.</div>
+      <div class="rev-q" style="border:1px solid var(--border)"><strong style="color:#7E22CE">Domingo —</strong> Revisión semanal 20 min. El pilar más importante del sistema.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FASES ══ -->
+
+<div class="view" id="v-fases">
+  <div class="ph"><div><div class="ph-title">Fases del cuatrimestre</div><div class="ph-sub">Entendé en qué momento estás y qué priorizar</div></div></div>
+  <div class="fase-list">
+    <div class="fase"><div class="fase-dot" style="background:#166534">1</div><div class="fase-body"><div class="fase-title">Arranque y setup</div><div class="fase-wk" style="color:#166534">Semanas 1–3 · Marzo</div><div class="fase-desc">Conocer el ritmo de cada materia · Confirmar inscripciones · Conseguir programas con fechas · Armar el sistema · No atrasarte desde el día 1</div></div></div>
+    <div class="fase"><div class="fase-dot" style="background:#1428A0">2</div><div class="fase-body"><div class="fase-title">Ritmo sostenido</div><div class="fase-wk" style="color:#1428A0">Semanas 4–8 · Abril – principios de mayo</div><div class="fase-desc">Primeros parciales y entregas · Mantener bloques de estudio · Conectar Logística y SIN con Samsung · Ajustar el sistema si algo no funcionó</div></div></div>
+    <div class="fase"><div class="fase-dot" style="background:#9A3412">3</div><div class="fase-body"><div class="fase-title">Pico de carga</div><div class="fase-wk" style="color:#9A3412">Semanas 9–12 · Mayo – junio</div><div class="fase-desc">Segundos parciales · TPs finales · Momento más exigente · La revisión dominical es crítica · Evitar el efecto tsunami — no estudiar todo junto</div></div></div>
+    <div class="fase"><div class="fase-dot" style="background:#7E22CE">4</div><div class="fase-body"><div class="fase-title">Cierre y finales</div><div class="fase-wk" style="color:#7E22CE">Semanas 13–16 · Julio</div><div class="fase-desc">Última recta de cursada · Recuperatorios · Organizar el período de finales · Balance del cuatrimestre · No abandonar Samsung</div></div></div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+// ── DATA ──
+const AREAS = {
+  samsung:{l:'Samsung',bg:'#EEF2FF',fg:'#1428A0'},
+  ci:{l:'Control Ind.',bg:'#DBEAFE',fg:'#1E40AF'},
+  ads:{l:'Análisis D&S',bg:'#EDE9FE',fg:'#5B21B6'},
+  ae:{l:'Adm. Empresas',bg:'#DCFCE7',fg:'#166534'},
+  rt:{l:'Rel. Trabajo',bg:'#FEF9C3',fg:'#854D0E'},
+  pi1:{l:'Proc. Ind. I',bg:'#FDF4FF',fg:'#7E22CE'},
+  log:{l:'Logística',bg:'#FFE4E6',fg:'#9F1239'},
+  sin:{l:'Sist. Info.',bg:'#ECFDF5',fg:'#065F46'},
+  fin:{l:'Finanzas',bg:'#FFF7ED',fg:'#9A3412'},
+  mcs:{l:'Moral y CS',bg:'#F0F9FF',fg:'#0C4A6E'},
+  otro:{l:'Otro',bg:'#F1F5F9',fg:'#475569'},
+};
+const PRI = {alta:{l:'Alta',bg:'#FEE2E2',fg:'#991B1B'},media:{l:'Media',bg:'#FEF3C7',fg:'#92400E'},baja:{l:'Baja',bg:'#F1F5F9',fg:'#475569'}};
+
+// ── STATE ──
+let tasks = JSON.parse(localStorage.getItem('rn2_tasks')||'[]');
+let wkOff = 0, curFilter = 'todas';
+
+function save(){ localStorage.setItem('rn2_tasks', JSON.stringify(tasks)); }
+
+// ── WEEK UTILS ──
+function getMonday(off){
+  const now = new Date(), day = now.getDay();
+  const diff = now.getDate() - day + (day===0?-6:1);
+  const mon = new Date(now); mon.setDate(diff + off*7); mon.setHours(0,0,0,0);
+  return mon;
+}
+function wkKey(off){ return getMonday(off).toISOString().slice(0,10); }
+function wkRange(off){
+  const mon = getMonday(off), sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  const f = d => d.toLocaleDateString('es-AR',{day:'numeric',month:'short'});
+  return `${f(mon)} — ${f(sun)}`;
+}
+function updateLabels(){
+  const r = wkRange(wkOff), sub = wkOff===0?'Semana actual':wkOff>0?`+${wkOff} sem`:`${wkOff} sem`;
+  ['cal','pend','pri'].forEach(id=>{ const el=document.getElementById('wk-'+id); if(el) el.textContent=r; });
+  const cs = document.getElementById('cal-sub'), ps = document.getElementById('pend-sub');
+  if(cs) cs.textContent = sub; if(ps) ps.textContent = sub;
+}
+function changeWeek(d){ wkOff+=d; updateLabels(); renderCal(); renderTasks(); renderStats(); renderPri(); }
+
+// ── NAVIGATION ──
+function nav(id, btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('on'));
+  document.getElementById('v-'+id).classList.add('on');
+  if(btn) btn.classList.add('on');
+  if(id==='rev') loadNotes();
+  if(id==='pri') renderPri();
+}
+
+// ── CALENDAR ──
+const SCHEDULE = [
+  // col 1=Lun,2=Mar,3=Mie,4=Jue,5=Vie (0-indexed after time col)
+  {col:0, s:'09:00',e:'13:00',label:'Samsung',sub:'Planning & Logistics',bg:'#EEF2FF',fg:'#1428A0'},
+  {col:1, s:'09:00',e:'13:00',label:'Samsung',sub:'Planning & Logistics',bg:'#EEF2FF',fg:'#1428A0'},
+  {col:2, s:'09:00',e:'13:00',label:'Samsung',sub:'Planning & Logistics',bg:'#EEF2FF',fg:'#1428A0'},
+  {col:3, s:'09:00',e:'13:00',label:'Samsung',sub:'Planning & Logistics',bg:'#EEF2FF',fg:'#1428A0'},
+  {col:4, s:'09:00',e:'13:00',label:'Samsung',sub:'Planning & Logistics',bg:'#EEF2FF',fg:'#1428A0'},
+  {col:0, s:'15:00',e:'16:30',label:'Control Industrial',sub:'Práctica',bg:'#DBEAFE',fg:'#1E40AF'},
+  {col:0, s:'16:30',e:'18:00',label:'Análisis D&S',sub:'Práctica',bg:'#EDE9FE',fg:'#5B21B6'},
+  {col:0, s:'18:00',e:'20:30',label:'Adm. de Empresas',sub:'Teórico',bg:'#DCFCE7',fg:'#166534'},
+  {col:1, s:'16:00',e:'18:30',label:'Análisis D&S',sub:'Teórico',bg:'#EDE9FE',fg:'#5B21B6'},
+  {col:1, s:'18:30',e:'20:00',label:'Rel. del Trabajo',sub:'Teórico',bg:'#FEF9C3',fg:'#854D0E'},
+  {col:1, s:'20:00',e:'21:00',label:'Rel. del Trabajo',sub:'Práctica',bg:'#FEF9C3',fg:'#854D0E'},
+  {col:2, s:'15:30',e:'18:00',label:'Proc. Ind. I',sub:'Práctica',bg:'#FDF4FF',fg:'#7E22CE'},
+  {col:2, s:'17:00',e:'18:30',label:'Control Industrial',sub:'Teórico ⚠',bg:'#DBEAFE',fg:'#1E40AF'},
+  {col:2, s:'18:00',e:'20:30',label:'Proc. Ind. I',sub:'Teórico',bg:'#FDF4FF',fg:'#7E22CE'},
+  {col:2, s:'20:30',e:'23:00',label:'Adm. de Empresas',sub:'Práctica',bg:'#DCFCE7',fg:'#166534'},
+  {col:3, s:'15:30',e:'17:00',label:'Logística',sub:'Teórico',bg:'#FFE4E6',fg:'#9F1239'},
+  {col:3, s:'17:00',e:'18:30',label:'Logística',sub:'Práctica',bg:'#FFE4E6',fg:'#9F1239'},
+  {col:3, s:'18:30',e:'20:00',label:'Sist. Info. Neg.',sub:'Teórico',bg:'#ECFDF5',fg:'#065F46'},
+  {col:3, s:'20:00',e:'21:30',label:'Sist. Info. Neg.',sub:'Práctica',bg:'#ECFDF5',fg:'#065F46'},
+  {col:4, s:'13:30',e:'16:00',label:'Moral y Comp. Social',sub:'Teórico',bg:'#F0F9FF',fg:'#0C4A6E'},
+  {col:4, s:'17:00',e:'19:30',label:'Finanzas',sub:'Teórico',bg:'#FFF7ED',fg:'#9A3412'},
+  {col:4, s:'19:30',e:'22:00',label:'Finanzas',sub:'Práctica',bg:'#FFF7ED',fg:'#9A3412'},
+];
+
+function toMin(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
+
+function renderCal(){
+  const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
+  const COLS = ['#1E40AF','#5B21B6','#166534','#9A3412','#9F1239'];
+  const START = 9*60, END = 23*60, SLOT = 30;
+  const slots = (END-START)/SLOT;
+  const CELL_H = 40; // px per slot
+
+  // stats
+  const dayHrs = [5.5, 5.0, 7.5, 6.0, 7.5];
+  document.getElementById('cal-stats').innerHTML = `
+    <div class="scard"><div class="scard-n">51.5hs</div><div class="scard-l">Total semanal</div></div>
+    <div class="scard"><div class="scard-n">20hs</div><div class="scard-l">Samsung</div></div>
+    <div class="scard"><div class="scard-n">31.5hs</div><div class="scard-l">Cursada UCA</div></div>
+    <div class="scard scard-warn"><div class="scard-n">~8hs</div><div class="scard-l">Franjas libres útiles</div></div>`;
+
+  // header
+  const hdr = document.getElementById('cal-header');
+  hdr.innerHTML = '<div></div>' + DAYS.map((d,i)=>`<div class="cal-day-hdr" style="background:${COLS[i]}">${d}</div>`).join('');
+
+  // grid — build as rows
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  // For each slot row
+  for(let slot=0; slot<slots; slot++){
+    const minAbs = START + slot*SLOT;
+    const h = Math.floor(minAbs/60), m = minAbs%60;
+    const timeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    const isHr = m===0;
+    // time cell
+    const tc = document.createElement('div');
+    tc.className = 'cal-time' + (isHr?' hr':'');
+    tc.textContent = isHr ? timeStr : '';
+    tc.style.height = CELL_H+'px';
+    grid.appendChild(tc);
+    // day cells
+    for(let col=0; col<5; col++){
+      const cell = document.createElement('div');
+      cell.style.height = CELL_H+'px';
+      cell.style.position = 'relative';
+      // find block that starts at this slot+col
+      const ev = SCHEDULE.find(e => e.col===col && toMin(e.s)===minAbs);
+      if(ev){
+        const durSlots = Math.round((toMin(ev.e)-toMin(ev.s))/SLOT);
+        const block = document.createElement('div');
+        block.className = 'cal-block';
+        block.style.cssText = `background:${ev.bg};color:${ev.fg};border-color:${ev.fg};height:${durSlots*CELL_H-2}px;position:absolute;top:1px;left:1px;right:1px;z-index:2`;
+        block.title = `${ev.label} · ${ev.sub} · ${ev.s}–${ev.e}`;
+        block.innerHTML = `<span style="font-weight:600;font-size:9px">${ev.label}</span><span style="font-size:8px;opacity:.8">${ev.sub}</span><span style="font-size:8px;opacity:.65">${ev.s}–${ev.e}</span>`;
+        cell.appendChild(block);
+      } else {
+        // check if inside a block
+        const inBlock = SCHEDULE.some(e => e.col===col && toMin(e.s)<minAbs && toMin(e.e)>minAbs);
+        if(!inBlock){
+          cell.style.background = isHr ? 'rgba(0,0,0,.02)' : 'transparent';
+          cell.style.borderTop = isHr ? '1px solid var(--border)' : 'none';
+        }
+      }
+      grid.appendChild(cell);
+    }
+  }
+}
+
+// ── TASKS ──
+function addTask(){
+  const inp = document.getElementById('t-input');
+  const text = inp.value.trim(); if(!text) return;
+  tasks.unshift({id:Date.now(), text, area:document.getElementById('t-area').value, priority:document.getElementById('t-pri').value, due:document.getElementById('t-due').value||null, done:false, wk:wkKey(wkOff)});
+  save(); inp.value=''; document.getElementById('t-due').value='';
+  renderTasks(); renderStats();
+}
+function toggleTask(id){ const t=tasks.find(t=>t.id===id); if(t){t.done=!t.done; save(); renderTasks(); renderStats();} }
+function delTask(id){ tasks=tasks.filter(t=>t.id!==id); save(); renderTasks(); renderStats(); }
+function setFilter(f){
+  curFilter=f;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.fb').forEach(b=>{ if(b.textContent.toLowerCase().includes(f.split('')[0])) {} });
+  // simpler: match by index
+  const filters=['todas','pendientes','samsung','facu','alta','vencidas'];
+  document.querySelectorAll('.fb').forEach((b,i)=>b.classList.toggle('on', filters[i]===f));
+  renderTasks();
+}
+function getFiltered(){
+  const wk=wkKey(wkOff), today=new Date().toISOString().slice(0,10);
+  return tasks.filter(t=>{
+    if(t.wk!==wk) return false;
+    if(curFilter==='pendientes') return !t.done;
+    if(curFilter==='samsung') return t.area==='samsung';
+    if(curFilter==='facu') return t.area!=='samsung'&&t.area!=='otro';
+    if(curFilter==='alta') return t.priority==='alta';
+    if(curFilter==='vencidas') return !t.done&&t.due&&t.due<today;
+    return true;
+  }).sort((a,b)=>{
+    if(a.done!==b.done) return a.done?1:-1;
+    return {alta:0,media:1,baja:2}[a.priority]-{alta:0,media:1,baja:2}[b.priority];
+  });
+}
+function renderTasks(){
+  const list=document.getElementById('task-list'); if(!list) return;
+  const items=getFiltered(), today=new Date().toISOString().slice(0,10);
+  if(!items.length){ list.innerHTML='<div class="empty">Sin pendientes para esta vista.<br>Usá el campo de arriba para agregar.</div>'; return; }
+  list.innerHTML=items.map(t=>{
+    const a=AREAS[t.area]||AREAS.otro, p=PRI[t.priority]||PRI.media;
+    let due=''; if(t.due){ const ov=!t.done&&t.due<today, soon=!t.done&&t.due>=today&&t.due<=new Date(Date.now()+3*86400000).toISOString().slice(0,10); due=`<span class="t-due${ov?' ov':soon?' soon':''}">${ov?'⚠ ':soon?'↑ ':''}${t.due}</span>`; }
+    return `<div class="task${t.done?' done':''}">
+      <div class="chk${t.done?' on':''}" onclick="toggleTask(${t.id})">${t.done?'✓':''}</div>
+      <div class="t-body"><div class="t-text">${t.text}</div>
+        <div class="t-meta"><span class="tag" style="background:${a.bg};color:${a.fg}">${a.l}</span><span class="tag" style="background:${p.bg};color:${p.fg}">${p.l}</span>${due}</div>
+      </div>
+      <button class="t-del" onclick="delTask(${t.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+function renderStats(){
+  const el=document.getElementById('stats-row'); if(!el) return;
+  const wk=wkKey(wkOff), wt=tasks.filter(t=>t.wk===wk);
+  const total=wt.length, done=wt.filter(t=>t.done).length, alta=wt.filter(t=>t.priority==='alta'&&!t.done).length;
+  const today=new Date().toISOString().slice(0,10), ov=wt.filter(t=>!t.done&&t.due&&t.due<today).length;
+  el.innerHTML=`<div class="scard"><div class="scard-n">${total-done}</div><div class="scard-l">Pendientes</div></div>
+    <div class="scard"><div class="scard-n">${done}</div><div class="scard-l">Completados</div></div>
+    <div class="scard${alta>0?' scard-warn':''}"><div class="scard-n">${alta}</div><div class="scard-l">Alta prioridad</div></div>
+    <div class="scard${ov>0?' scard-warn':''}"><div class="scard-n">${ov}</div><div class="scard-l">Vencidas</div></div>`;
+}
+
+// ── NOTAS ──
+function loadNotes(){ const el=document.getElementById('rev-notes'); if(el) el.value=localStorage.getItem('rn2_notes_'+wkKey(wkOff))||''; }
+function saveNotes(){ localStorage.setItem('rn2_notes_'+wkKey(wkOff), document.getElementById('rev-notes').value); flash('notes-ok'); }
+
+// ── PRIORIDADES ──
+function renderPri(){
+  const wk=wkKey(wkOff), saved=JSON.parse(localStorage.getItem('rn2_pri_'+wk)||'["","",""]');
+  const cols=['#1428A0','#7E22CE','#166534'];
+  document.getElementById('pri-list').innerHTML=[0,1,2].map(i=>`
+    <div class="pri-card"><div class="pri-num" style="background:${cols[i]}">${i+1}</div>
+      <input class="pri-input" id="pri-${i}" value="${saved[i]||''}" placeholder="Top ${i+1} de la semana...">
+    </div>`).join('');
+}
+function savePri(){ const wk=wkKey(wkOff); localStorage.setItem('rn2_pri_'+wk, JSON.stringify([0,1,2].map(i=>document.getElementById('pri-'+i).value.trim()))); flash('pri-ok'); }
+function flash(id){ const el=document.getElementById(id); el.style.opacity='1'; setTimeout(()=>el.style.opacity='0',2000); }
+
+// ── INIT ──
+updateLabels(); renderCal(); renderStats(); renderTasks();
+</script>
+
+</body>
+</html>
